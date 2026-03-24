@@ -1,5 +1,5 @@
 from fastmcp import FastMCP
-from scraper import setup_driver,parse_results,fetch_page
+# from scraper import setup_driver,parse_results,fetch_page
 from langgraph.graph import StateGraph, MessagesState, START, END
 from pydantic import BaseModel,Field
 from langchain_ollama import ChatOllama
@@ -18,7 +18,7 @@ class AnsibleCheck(BaseModel):
     )
 
 
-llm = ChatOllama(model="gemma3:1b-it-qat", temperature=0)
+llm = ChatOllama(model="gemma3:1b", temperature=0)
 structured_llm = llm.with_structured_output(AnsibleCheck)
 
 prompt = ChatPromptTemplate.from_messages(
@@ -84,40 +84,43 @@ classifier_chain = prompt | structured_llm
 @mcp.tool
 def get_relevant_data(query: str) -> list:
     """Run scraper to get relevant data based on the query."""
-
+    
     all_results = []
-
+ 
     try:
-        # driver = setup_driver()
         search_terms = [query]
+        
 
         for term in search_terms:
             print(f"Scraping: '{term}'...")
 
-            # results = parse_results(fetch_page(driver, term), term)
+            
             urls_dict = DDGS().text(query, max_results=5)
+            
             urls=[u["href"]for u in urls_dict]
             for u in urls:
-                result=scrape_url(u)
-                all_results.extend(result)
-                print(f"→ Captured {len(result)} results")
+                try:
+                    result=scrape_url(u)
+                    all_results.append(result["data"])
+                    print(f"→ Captured {len(result)} results")
+                except Exception as e:
+                    print(e,"Error while scraping ")
+            
 
         # Process the results with the classifier chain
-        # chain_output = classifier_chain.invoke({"text": all_results})
-        # print(chain_output.is_ansible_related)
-        # # Ensure proper structure and check for Ansible relevance
-        # if not chain_output.is_ansible_related:
-        #     all_results = []
+        print(1)
+        chain_output = classifier_chain.invoke({"text": all_results})
+        print(2)
+        print(chain_output.is_ansible_related)
+        print(3)
+        # Ensure proper structure and check for Ansible relevance
+        if not chain_output.is_ansible_related:
+            print(4)
+            all_results = []
 
     except Exception as e:
         print(f"Error: {e}")
         return ["the server is facing some issues. The team is trying to solve it ASAP."]
-
-    # finally:
-    #     # Ensuring the driver is closed
-    #     if 'driver' in locals():
-    #         driver.quit()
-
     return all_results
 
 

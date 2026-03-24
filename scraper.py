@@ -15,7 +15,7 @@ import random
 # Configuration
 REQUEST_DELAY = (1, 3)  # Min/max seconds between requests
 MAX_RETRIES = 2
-CSV_FIELDS = ["search_term", "rank", "title", "url", "description"]
+CSV_FIELDS = ["search_term", "rank", "title", "url"]
 
 
 
